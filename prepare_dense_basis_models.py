@@ -92,6 +92,8 @@ def prepare_dense_basis_simulations(N_pregrid=20000, Nparam=3, Nsim=1000):
         obs_sed = db.makespec(specdetails, priors, db.mocksp, db.cosmo,
                               filter_list=filter_list, filt_dir=filt_dir,
                               input_sfh=False)
+        obs_sed *= u.Jy
+        obs_sed = obs_sed.to(context.fnu_unit).value
         # store the true stellar mass and SFR
         mstar_true = np.log10(db.mocksp.stellar_mass)
         sfr_true = np.log10(db.mocksp.sfr)
