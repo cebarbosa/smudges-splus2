@@ -24,16 +24,23 @@ if platform.node() == "kadu-Inspiron-5557":
 elif platform.node() in ["uv100", "alphacrucis"]:
     home_dir = f"/sto/home/cebarbosa/{project_name}"
 elif home == "/home/u11/cebarbosa":
-    home_dir = os.path.join(home, projec_tname)
+    home_dir = os.path.join(home, project_name)
 
 tables_dir = os.path.join(home_dir, "tables")
 data_dir = os.path.join(home_dir, "data")
 plots_dir = os.path.join(home_dir, "plots")
 
+# Setting up dustmaps
 config['data_dir'] = os.path.join(data_dir, "dustmaps")
 if not os.path.exists(config["data_dir"]): # Just to run once in my example
     sfd.fetch() # Specific for Schlafy and Finkbeiner (2011), which is an
     # updated version of the popular Schlegel, Finkbeiner & Davis (1998) maps
+
+# Setting FSPS
+fsps_dir = "/home/kadu/repos/fsps"
+os.environ["SPS_HOME"] = fsps_dir
+
+# SPLUS configurations
 
 bands = ["F378", "F395", "F410", "F430", "F515", "F660", "F861", "G",
          "I", "R", "U", "Z"]
@@ -63,8 +70,9 @@ wave_eff = {"F378": 3773.4, "F395": 3940.8, "F410": 4095.4,
             "G": 4647.8, "I": 7683.8, "R": 6266.6, "U": 3536.5,
             "Z": 8679.5}
 
-
-
+# Defining units
+flam_unit = u.erg / u.cm / u.cm / u.s / u.AA
+fnu_unit = u.erg / u.s / u.cm / u.cm / u.Hz
 
 # Matplotlib settings
 plt.style.context("seaborn-paper")
@@ -105,6 +113,3 @@ plt.rcParams['ytick.minor.width'] = width
 plt.rcParams['axes.linewidth'] = width
 
 fig_width = 3.35 # inches
-
-flam_unit = u.erg / u.cm / u.cm / u.s / u.AA
-fnu_unit = u.erg / u.s / u.cm / u.cm / u.Hz
