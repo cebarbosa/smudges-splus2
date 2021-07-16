@@ -33,7 +33,36 @@ def set_priors(Nparam):
     priors.Z_max = 0.50
     return priors
 
-def prepare_dense_basis_simulations(N_pregrid=20000, Nparam=3, Nsim=1000):
+def prepare_models(N_pregrid=20000, Nparam=3):
+    # Setting up dense basis
+    filt_dir = os.path.join(os.getcwd(), "filter_curves-master")
+    filter_list = "filter_list_splus.dat"
+    fname = "dbgrid_splus"
+    models_dir = os.path.join(context.home_dir, "models")
+    path = models_dir + "/"
+    model_name = f"{fname}_{N_pregrid}_Nparam_{Nparam}.fits"
+    dbfile = os.path.join(models_dir, model_name)
+    priors = set_priors(Nparam)
+    # priors.plot_prior_distributions()
+    atlas = db.generate_atlas(N_pregrid=N_pregrid, priors=priors,
+                      store=False, filter_list=filter_list,
+                      filt_dir=filt_dir)
+    model_params = np.vstack((atlas['mstar'], atlas['sfr'],
+                              atlas['sfh_tuple'][0:, -3:].T,
+                              atlas['met'].ravel(), atlas['dust'].ravel(),
+                              atlas['zval'].ravel())).T
+    if Nparam == 3:
+        colnames = ["Mstar", "SFR", "t25", "t50", "t75", "metal", "Av", "z"]
+    else:
+        raise(NotImplementedError("Column names are not defined for this "
+                                  "model"))
+    params = Table(model_params, names=colnames)
+    seds =  Table(atlas['sed'], names=context.bands)
+    table = hstack([params, seds])
+    table.write(dbfile, overwrite=True)
+    return
+
+def make_simulations(N_pregrid=20000, Nparam=3, Nsim=1000):
     # Determination of error in fnu in a single pixel
     flamerr = np.loadtxt("assets/noise_90.dat", usecols=(1,), skiprows=1) * \
         context.flam_unit
@@ -42,22 +71,6 @@ def prepare_dense_basis_simulations(N_pregrid=20000, Nparam=3, Nsim=1000):
     idx = context.bands.index("R")
     fnuerr = flamerr / const.c * wave**2
     fnuerr = fnuerr.to(u.mJy)
-    # Setting up dense basis
-    wdir = os.getcwd()
-    filt_dir = os.path.join(wdir, "filter_curves-master")
-    filter_list = "filter_list_splus.dat"
-    fname = "dbgrid_splus"
-    path = "dense_basis_models/"
-    dbfile = os.path.join(wdir, path,
-                          f"{fname}_{N_pregrid}_Nparam_{Nparam}.dbatlas")
-    priors = set_priors(Nparam)
-    # priors.plot_prior_distributions()
-    if not os.path.exists(dbfile):
-        db.generate_atlas(N_pregrid=N_pregrid, priors=priors, fname=fname,
-                          store=True, path=path, filter_list=filter_list,
-                          filt_dir=filt_dir)
-    atlas = db.load_atlas(fname, N_pregrid=N_pregrid, N_param=Nparam,
-                          path=path)
     # Performing simulations
     seed = np.random.randint(10 * Nsim, size = Nsim)
     filename = os.path.join(context.tables_dir,
@@ -69,12 +82,7 @@ def prepare_dense_basis_simulations(N_pregrid=20000, Nparam=3, Nsim=1000):
     else:
         table = None
         nready = 0
-    if Nparam == 3:
-        colnames = ["Mstar", "SFR", "t25", "t50", "t75", "metal", "Av", "z"] + \
-                   context.bands
-    else:
-        raise(NotImplementedError("Column names are not defined for this "
-                                  "model"))
+
     for n in tqdm(range(Nsim)):
         if n + 1 < nready:
             continue
@@ -113,5 +121,10 @@ def prepare_dense_basis_simulations(N_pregrid=20000, Nparam=3, Nsim=1000):
         # sedfit.evaluate_likelihood()
         # sedfit.evaluate_posterior_percentiles()
 
+
 if __name__ == "__main__":
-    prepare_dense_basis_simulations()
+    N_pregrid = 200000
+    Nparam = 3
+    Nsim = 1000
+    prepare_models(N_pregrid=N_pregrid, Nparam=Nparam)
+    # make_simulations(N_pregrid=N_pregrid, Nparam=Nparam, Nsim=Nsim)
